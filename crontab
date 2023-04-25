@@ -1,0 +1,1 @@
+*/30 * * * * python3 /app/run_cron.py >> /var/log/dst.log 2>&1
