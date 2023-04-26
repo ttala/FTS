@@ -7,10 +7,11 @@ import os
 import tarfile
 import background
 from pymongo import MongoClient
+import psycopg2
 
-config_path = '/home/ttyeri/work/flights-tracking/config.ini'
+config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
 
-def db_connect():
+def mongo_connect():
     config = configparser.RawConfigParser()   
     config.read(config_path)
     user = config.get('MONGO', 'USERNAME')
@@ -25,6 +26,21 @@ def db_connect():
         print(ex)
         import pdb;pdb.set_trace()
     return client
+
+def postgre_connect():
+    config = configparser.RawConfigParser()   
+    config.read(config_path)
+    user = config.get('POSTGRESQL', 'USERNAME')
+    password = config.get('POSTGRESQL', 'PASSWORD')
+    host = config.get('POSTGRESQL', 'HOST')
+    database = config.get('POSTGRESQL', 'DATABASE')
+    conn = None
+    try:
+        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=5433)
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    return conn
+
 
 def airlab_config():
     config = configparser.RawConfigParser()   
@@ -57,18 +73,39 @@ def get_airlab_flights():
 
 
 # Clean and filtering the call API for only Europeans flights (France, Italy, Spain, German, England)
-def clean_filter_flights(data):
-    client = db_connect()
-    db = client['dst']['airlines']
-    # Reading iata code for airlines and airports from db
-    #airlines = db.find({"country": { "$in": ["France", "Italy", "Spain", "German", "England"]}})
-    airlines = db.find({})
-    db = client['dst']['airports']
-    airports = db.find({"country": { "$in": ["France", "Italy", "Spain", "Germany", "United Kingdom"]}})
+def clean_filter_flights(json_result):
+    # client = mongo_connect()
+    # db = client['dst']['airlines']
+    # # Reading iata code for airlines and airports from db
+    # #airlines = db.find({"country": { "$in": ["France", "Italy", "Spain", "German", "England"]}})
+    # airlines = db.find({})
+    # db = client['dst']['airports']
+    # airports = db.find({"country": { "$in": ["France", "Italy", "Spain", "Germany", "United Kingdom"]}})
 
-    df_airlines = pd.DataFrame(list(airlines)).set_index('iata', drop=False)
+    conn = postgre_connect()
+    cursor = conn.cursor()
+    # Querying airline db
+    cursor.execute('SELECT * FROM airline')
+    tupl = cursor.fetchall()
+    data = []
+    for row in tupl:
+        data.append(row)
+    airlines = pd.DataFrame(data, columns=('iata', 'name', 'country'))
+    # Querying airport db
+    cursor.execute("SELECT * FROM airport WHERE country in ('France', 'Italy', 'Spain', 'Germany', 'United Kingdom')")
+    tupl = cursor.fetchall()
+    data = []
+    for row in tupl:
+        data.append(row)
+    airports = pd.DataFrame(data, columns=('iata', 'name', 'city', 'country'))
+
+    # Closing cursor and connection
+    cursor.close()
+    conn.close()
+
+    df_airlines = airlines.set_index('iata', drop=False)
     df_airlines = df_airlines[["iata", "name"]].rename(columns={'name':'airline_name', 'iata':'airline_iata'})
-    df_airports = pd.DataFrame(list(airports)).set_index('iata', drop=False)
+    df_airports = airports.set_index('iata', drop=False)
     df_airports_dep = df_airports[["iata", "city", "country", "name"]] \
     .rename(columns={'name':'dep_airport', 'iata':'dep_iata', "country":"dep_country", "city":"dep_city"})
     df_airports_arr = df_airports[["iata", "city", "country", "name"]] \
@@ -76,7 +113,7 @@ def clean_filter_flights(data):
     iata_list = list(df_airlines.index)
 
     # Filtering API response for 'en-route' and European
-    data_df = pd.DataFrame(data['response']).set_index('flight_iata', drop=False)
+    data_df = pd.DataFrame(json_result['response']).set_index('flight_iata', drop=False)
     data_df = data_df[data_df["airline_iata"].isin(iata_list)]
     data_df = data_df[data_df['status'] == 'en-route']
  
@@ -137,7 +174,7 @@ def get_flight_info(iata):
 
 # Get all the flights from mongodb
 def get_all_flights():
-    client = db_connect()
+    client = mongo_connect()
     db = client['dst']['flights']
     data = list(db.find({}))
     client.close()
@@ -149,7 +186,7 @@ def get_all_flights():
 
 # Get the list of "en-route" flights from mongodb and return a dataframe or None if the db is empty
 def get_enRoute_flights():
-    client = db_connect()
+    client = mongo_connect()
     db = client['dst']['flights']
     data = list(db.find({"status": "en-route"}))
     client.close()
@@ -206,7 +243,7 @@ def change_fields(data):
 
 # This method insert the flights into the db if its empty, otherwise its update the flights in the db
 def load_flights_to_mongodb(flights):
-    client = db_connect()
+    client = mongo_connect()
     db = client['dst']['flights']
     
     if db.count_documents({}) == 0:
@@ -252,19 +289,8 @@ def get_dates(flights):
     return start_date, ends_date
 
 if __name__ == '__main__':
-    start_time = datetime.now()
-    df_db = get_enRoute_flights()
-    end_time = datetime.now()
-    delta = end_time - start_time
-    print(f'time to query db: {delta.total_seconds()} s, len = {len(df_db.index)}')
-    start_time = datetime.now()
-    df_ab = get_airlab_flights()
-    end_time = datetime.now()
-    delta = end_time - start_time
-    print(f'time to query api: {delta.total_seconds()} s, len = {len(df_ab.index)}')
-    start_time = datetime.now()
-    df_db_up = update_db_flights(df_ab, df_db)
-    end_time = datetime.now()
-    delta = end_time - start_time
-    print(f'time to query update the db: {delta.total_seconds()} s')
+    df = get_airlab_flights()
+    data = clean_filter_flights(df)
+    import pdb;pdb.set_trace()
+    print(data.head(4))
     

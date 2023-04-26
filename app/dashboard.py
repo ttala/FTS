@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import configparser
 from dash_bootstrap_templates import load_figure_template
-from flights_call_process import *
+from flights_process import *
 from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
 from geopy.geocoders import Nominatim
 
@@ -19,7 +19,7 @@ app = DashProxy(external_stylesheets=[dbc.themes.LUX], transforms=[MultiplexerTr
                 ,suppress_callback_exceptions=True)
 geolocator = Nominatim(user_agent=app.title)
 
-config_path = 'config.ini'
+config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
 config = configparser.RawConfigParser()
 config.read(config_path)
 mapbox_key = config.get('MAPBOX', 'KEY')
