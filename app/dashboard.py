@@ -10,19 +10,17 @@ from dash_bootstrap_templates import load_figure_template
 from flights_process import *
 from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
 from geopy.geocoders import Nominatim
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 load_figure_template('LUX')
-#app = dash.Dash(external_stylesheets=[dbc.themes.LUX], suppress_callback_exceptions=True)
-#app = DashProxy(prevent_initial_callbacks=True, transforms=[MultiplexerTransform()])
 app = DashProxy(external_stylesheets=[dbc.themes.LUX], transforms=[MultiplexerTransform()]
                 ,suppress_callback_exceptions=True)
 geolocator = Nominatim(user_agent=app.title)
 
-config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
-config = configparser.RawConfigParser()
-config.read(config_path)
-mapbox_key = config.get('MAPBOX', 'KEY')
+mapbox_key = os.getenv('MAPBOX_KEY')
 
 
 # Lat Long center
@@ -349,4 +347,4 @@ def get_detail_flight(current_flight):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', port=8050, debug=True)

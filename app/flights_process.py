@@ -8,16 +8,17 @@ import tarfile
 import background
 from pymongo import MongoClient
 import psycopg2
+from dotenv import load_dotenv
 
-config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
+
+load_dotenv()
+
+#config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
 
 def mongo_connect():
-    config = configparser.RawConfigParser()   
-    config.read(config_path)
-    user = config.get('MONGO', 'USERNAME')
-    password = config.get('MONGO', 'PASSWORD')
-    host = config.get('MONGO', 'HOST')
-    database = config.get('MONGO', 'DATABASE')
+    user = os.getenv('MONGO_USERNAME')
+    password = os.getenv('MONGO_PASSWORD')
+    host = os.getenv('MONGO_HOST')
         
     db_url = f'mongodb+srv://{user}:{password}@{host}/?retryWrites=true&w=majority'
     try:
@@ -28,25 +29,22 @@ def mongo_connect():
     return client
 
 def postgre_connect():
-    config = configparser.RawConfigParser()   
-    config.read(config_path)
-    user = config.get('POSTGRESQL', 'USERNAME')
-    password = config.get('POSTGRESQL', 'PASSWORD')
-    host = config.get('POSTGRESQL', 'HOST')
-    database = config.get('POSTGRESQL', 'DATABASE')
+    user = os.getenv('POSTGRESQL_USERNAME')
+    password = os.getenv('POSTGRESQL_PASSWORD')
+    host = os.getenv('POSTGRESQL_HOST')
+    database = os.getenv('POSTGRESQL_DATABASE')
     conn = None
     try:
         conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=5433)
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        return None
     return conn
 
 
 def airlab_config():
-    config = configparser.RawConfigParser()   
-    config.read(config_path)
-    api_key = config.get('AIRLAB', 'KEY')
-    url = config.get('AIRLAB' ,'URL')
+    api_key = os.getenv('AIRLAB_KEY')
+    url = os.getenv('AIRLAB_URL')
 
     params = {'api_key': api_key}
 
@@ -74,14 +72,6 @@ def get_airlab_flights():
 
 # Clean and filtering the call API for only Europeans flights (France, Italy, Spain, German, England)
 def clean_filter_flights(json_result):
-    # client = mongo_connect()
-    # db = client['dst']['airlines']
-    # # Reading iata code for airlines and airports from db
-    # #airlines = db.find({"country": { "$in": ["France", "Italy", "Spain", "German", "England"]}})
-    # airlines = db.find({})
-    # db = client['dst']['airports']
-    # airports = db.find({"country": { "$in": ["France", "Italy", "Spain", "Germany", "United Kingdom"]}})
-
     conn = postgre_connect()
     cursor = conn.cursor()
     # Querying airline db

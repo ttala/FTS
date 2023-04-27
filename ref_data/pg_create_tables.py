@@ -4,17 +4,19 @@ from pg_models import Base, Airline, Airport
 import configparser
 import os, csv
 import psycopg2
+from dotenv import load_dotenv
 
-config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
+
+load_dotenv()
+
+#config_path = '/home/ttyeri/work/flights-tracking/flights_tracking_stats/config.ini'
 
 # Init the engine
 def postgre_connect():
-    config = configparser.RawConfigParser()   
-    config.read(config_path)
-    user = config.get('POSTGRESQL', 'USERNAME')
-    password = config.get('POSTGRESQL', 'PASSWORD')
-    host = config.get('POSTGRESQL', 'HOST')
-    database = config.get('POSTGRESQL', 'DATABASE')
+    user = os.getenv('POSTGRESQL_USERNAME')
+    password = os.getenv('POSTGRESQL_PASSWORD')
+    host = os.getenv('POSTGRESQL_HOST')
+    database = os.getenv('POSTGRESQL_HOST')
     conn = None
     try:
         conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=5433)
@@ -113,11 +115,6 @@ def load_airline(csv_file):
         if connect:
             cursor.close()
             connect.close()
-
-# This method delete reference tables if they exist and create them as new
-def reset_pg_db(engine):
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
 
 
 # then create them new and load them using reference csv's
