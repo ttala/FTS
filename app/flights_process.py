@@ -26,8 +26,7 @@ def mongo_connect():
         
     #db_url = f'mongodb+srv://{user}:{password}@{host}/?retryWrites=true&w=majority'
     db_url = f"mongodb+srv://{user}:{password}@{instance_id}.mgdb.{region}.scw.cloud/?tls=true&tlsCAFile={tls_certificate}"
-        
-    print(db_url)
+    
     try:
         client = MongoClient(db_url)
     except Exception as ex:
