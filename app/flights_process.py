@@ -18,9 +18,16 @@ load_dotenv()
 def mongo_connect():
     user = os.getenv('MONGO_USERNAME')
     password = os.getenv('MONGO_PASSWORD')
-    host = os.getenv('MONGO_HOST')
+    instance_id = os.getenv('MONGO_ID')
+    region = os.getenv('MONGO_REGION')
+    #private_network_id = os.getenv('MONGO', 'PRIV_NET_ID')
+    tls_certificate = os.path.join('..','mgdb-mongodb.pem')
+
         
-    db_url = f'mongodb+srv://{user}:{password}@{host}/?retryWrites=true&w=majority'
+    #db_url = f'mongodb+srv://{user}:{password}@{host}/?retryWrites=true&w=majority'
+    db_url = f"mongodb+srv://{user}:{password}@{instance_id}.mgdb.{region}.scw.cloud/?tls=true&tlsCAFile={tls_certificate}"
+        
+    print(db_url)
     try:
         client = MongoClient(db_url)
     except Exception as ex:
@@ -32,10 +39,11 @@ def postgre_connect():
     user = os.getenv('POSTGRESQL_USERNAME')
     password = os.getenv('POSTGRESQL_PASSWORD')
     host = os.getenv('POSTGRESQL_HOST')
-    database = os.getenv('POSTGRESQL_DATABASE')
+    database = os.getenv('POSTGRESQL_DB')
+    port = os.getenv('POSTGRESQL_PORT')
     conn = None
     try:
-        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=5433)
+        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=port)
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
         return None
@@ -281,6 +289,12 @@ def get_dates(flights):
 if __name__ == '__main__':
     df = get_airlab_flights()
     data = clean_filter_flights(df)
-    import pdb;pdb.set_trace()
-    print(data.head(4))
+    current_flights = get_airlab_flights()
+    db_flights = get_enRoute_flights()
+    try:
+        update_db_flights(current_flights=current_flights, db_flights=db_flights)
+    except Exception as ex:
+        print(ex)
+        import pdb;pdb.set_trace()
+    print('### finish ###')
     

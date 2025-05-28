@@ -29,7 +29,7 @@ long_center = -0.6401
 
 # Main figure shows at the start
 def get_figure(data):
-    fig = go.Figure(go.Scattermapbox(
+    fig = go.Figure(go.Scattermap(
         mode="markers",
         lon=list(data.lng),
         lat=list(data.lat),
@@ -70,7 +70,7 @@ def get_figure_flight(data, flight):
     lons.insert(0, location.longitude)
     lats.append(flight["lat"])
     lats.insert(0, location.latitude)
-    figure = go.Figure(go.Scattermapbox(
+    figure = go.Figure(go.Scattermap(
         mode="markers",
         lon=[flight['lng']],
         lat=[flight['lat']],
@@ -88,7 +88,7 @@ def get_figure_flight(data, flight):
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
         showlegend=False,
     )
-    figure.add_trace(go.Scattermapbox(
+    figure.add_trace(go.Scattermap(
         mode="lines",
         lon=lons,
         lat=lats,
@@ -146,7 +146,9 @@ def get_hist_graph_airport(data):
 
 raw_flights = get_airlab_flights()
 df_ab = clean_filter_flights(raw_flights)
-df_all = get_all_flights()
+df_all = clean_filter_flights(raw_flights)
+#df_all = get_all_flights()
+#import pdb;pdb.set_trace()
 figure = get_figure(df_ab)
 # start_date, ends_date = get_dates(df_all)
 # range_date = f'From {start_date} date to {ends_date}'
@@ -347,4 +349,4 @@ def get_detail_flight(current_flight):
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8050, debug=True)
+    app.run(host='0.0.0.0', port=8050, debug=True)

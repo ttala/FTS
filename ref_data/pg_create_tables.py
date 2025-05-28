@@ -16,10 +16,11 @@ def postgre_connect():
     user = os.getenv('POSTGRESQL_USERNAME')
     password = os.getenv('POSTGRESQL_PASSWORD')
     host = os.getenv('POSTGRESQL_HOST')
-    database = os.getenv('POSTGRESQL_HOST')
+    database = os.getenv('POSTGRESQL_DB')
+    port = os.getenv('POSTGRESQL_PORT')
     conn = None
     try:
-        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=5433)
+        conn = psycopg2.connect(host=host,database=database,user=user,password=password,port=port)
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     return conn
